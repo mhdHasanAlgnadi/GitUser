@@ -2,35 +2,47 @@
 //  GitUserTests.swift
 //  GitUserTests
 //
-//  Created by Mhd Hasan Al Janadi on 18/08/2022.
+//  Created by Mhd Hasan Al Janadi on 17/08/2022.
 //
 
 import XCTest
+import RxTest
+import RxSwift
 @testable import GitUser
 
 class GitUserTests: XCTestCase {
-
+    var disposeBag: DisposeBag!
+    
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
+        disposeBag = DisposeBag()
     }
-
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+    
+    func testGetUser() throws {
+        let expectation = expectation(description: "Get User")
+        expectation.assertForOverFulfill = false
+        let searchForUserVM = SearchForUserVM()
+        let username = "octocat"
+        let rx = searchForUserVM.getUser(username: username)
+        rx.subscribe(onNext: { response in
+            XCTAssertTrue(response.login == username)
+            XCTAssertTrue(response.login != nil)
+            XCTAssertTrue(response.id != nil)
+            expectation.fulfill()
+        }, onError: { error in
+            
+        }, onCompleted: {
+            
+        }).disposed(by: disposeBag)
+        wait(for: [expectation], timeout: 10)
     }
-
-    func testExample() throws {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // Any test you write for XCTest can be annotated as throws and async.
-        // Mark your test throws to produce an unexpected failure when your test encounters an uncaught error.
-        // Mark your test async to allow awaiting for asynchronous code to complete. Check the results with assertions afterwards.
+    
+    func testCreateUser() throws {
+        let userToBeSaved = User(login: "octocat", id: 1, name: "monalisa octocat", avatarURL: "https://github.com/images/error/octocat_happy.gif", followers: 20, following: 0, location: "San Francisco", bio: "There once was...", created_at: "2008-01-14T04:33:35Z")
+        CoreDataManager.shared.create(userToBeSaved)
+        let fetchedUsers = CoreDataManager.shared.fetchUser()
+        XCTAssertTrue(fetchedUsers.contains(where: {$0.login == "octocat"}))
+        
     }
-
-    func testPerformanceExample() throws {
-        // This is an example of a performance test case.
-        self.measure {
-            // Put the code you want to measure the time of here.
-        }
-    }
+    
 
 }
